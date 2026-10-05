@@ -2,13 +2,13 @@ Login Processing Services
 Author: Keti Duracoska
 
 
-The solution consists of two Spring Boot microservices:
+### The solution consists of two Spring Boot microservices:
 
-login-processing-service - consumes login events from Kafka, calls the tracking service and publishes the tracking result.
+1.login-processing-service - consumes login events from Kafka, calls the tracking service and publishes the tracking result.
 
-track-login-service - exposes a secured REST endpoint and persists login events in PostgreSQL.
+2.track-login-service - exposes a secured REST endpoint and persists login events in PostgreSQL.
 
-Kafka Topics:
+### Kafka Topics:
 
 1.customer-login
 
@@ -41,25 +41,20 @@ Example:
   "result": "successful"
 }
 
-REST API:
+### REST API:
 
-track-login-service exposes:
+track-login-service exposes: POST /api/v1/login. The endpoint accepts a login event and stores it in PostgreSQL. The service uses HTTP Basic Authentication.
 
-POST /api/v1/login
+### Retry Handling
 
-The endpoint accepts a login event and stores it in PostgreSQL.
+If track-login-service does not return HTTP 200, login-processing-service retries the REST request three times. After the final failed attempt, the result is unsuccessful.
 
-The service uses HTTP Basic Authentication.
+### Database
 
-Retry Handling
+PostgreSQL is used by track-login-service. The database schema is managed using Liquibase. The main table is: login_event with message_id as the primary key.
 
-If track-login-service does not return HTTP 200, login-processing-service retries the REST request three times.
+### Kafka Retry & Dead Letter Topic
 
-After the final failed attempt, the result is unsuccessful.
+Failed Kafka messages are retried 3 times with a 3-second fixed backoff between attempts. If processing still fails after all retries, the message is published to a Dead Letter Topic.
 
-Database
-
-PostgreSQL is used by track-login-service. The database schema is managed using Liquibase.
-
-The main table is: login_event with message_id as the primary key.
 
